@@ -5,94 +5,17 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>HARDed AI</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#080808;color:#f5f5f5;font-family:Inter,Arial,sans-serif;height:100vh}
-.app{height:100%;max-width:1050px;margin:auto;display:flex;flex-direction:column}
-header{height:64px;border-bottom:1px solid #242424;display:flex;align-items:center;padding:0 20px;gap:12px}
-.logo{width:36px;height:36px;border:1px solid #444;border-radius:9px;display:grid;place-items:center;font-weight:800}
-.title{font-weight:700}.sub{color:#777;font-size:12px;margin-top:2px}
-main{flex:1;overflow:auto;padding:24px 18px}.message{max-width:820px;margin:0 auto 18px;display:flex}
-.message.user{justify-content:flex-end}.bubble{padding:13px 15px;border:1px solid #272727;border-radius:14px;line-height:1.5;white-space:pre-wrap}
-.user .bubble{background:#151515}.assistant .bubble{background:#0d0d0d}
-.meta{font-size:11px;color:#666;margin:0 0 6px 3px}.composer{border-top:1px solid #242424;padding:14px 18px 18px}
-.row{max-width:820px;margin:auto;display:flex;gap:10px}
-textarea{flex:1;resize:none;min-height:54px;max-height:180px;background:#101010;color:#fff;border:1px solid #303030;border-radius:12px;padding:14px;font:inherit;outline:none}
-button{border:1px solid #3b3b3b;background:#eee;color:#080808;border-radius:12px;padding:0 20px;font-weight:700;cursor:pointer}
-button:disabled{opacity:.45}.settings{max-width:820px;margin:0 auto 10px;display:flex;gap:8px}
-input{flex:1;background:#101010;color:#ddd;border:1px solid #303030;border-radius:9px;padding:9px}
-.status{max-width:820px;margin:8px auto 0;color:#777;font-size:12px}
-</style>
-</head>
-<body>
-<div class="app">
-<header><div class="logo">H</div><div><div class="title">HARDed AI</div><div class="sub">Llama 3.2 3B · sessão persistente no GitHub Actions</div></div></header>
-<main id="chat"><div class="message assistant"><div><div class="meta">HARDed</div><div class="bubble">Olá. Inicie uma sessão no GitHub Actions e mantenha o runner aberto. Depois posso responder várias mensagens sem recarregar o modelo.</div></div></div></main>
-<div class="composer">
-<div class="settings"><input id="token" type="password" placeholder="GitHub fine-grained token (somente nesta sessão)"><button id="start">Iniciar sessão</button></div>
-<div class="row"><textarea id="prompt" placeholder="Digite sua mensagem..." rows="1"></textarea><button id="send" disabled>Enviar</button></div>
-<div id="status" class="status">Sessão não iniciada.</div>
-</div>
-</div>
+*{box-sizing:border-box}body{margin:0;background:#080808;color:#f5f5f5;font-family:Inter,Arial,sans-serif;height:100vh}.app{height:100%;max-width:1050px;margin:auto;display:flex;flex-direction:column}header{height:64px;border-bottom:1px solid #242424;display:flex;align-items:center;padding:0 20px;gap:12px}.logo{width:36px;height:36px;border:1px solid #444;border-radius:9px;display:grid;place-items:center;font-weight:800}.title{font-weight:700}.sub{color:#777;font-size:12px;margin-top:2px}main{flex:1;overflow:auto;padding:24px 18px}.message{max-width:820px;margin:0 auto 18px;display:flex}.message.user{justify-content:flex-end}.bubble{padding:13px 15px;border:1px solid #272727;border-radius:14px;line-height:1.5;white-space:pre-wrap}.user .bubble{background:#151515}.assistant .bubble{background:#0d0d0d}.meta{font-size:11px;color:#666;margin:0 0 6px 3px}.composer{border-top:1px solid #242424;padding:14px 18px 18px}.row{max-width:820px;margin:auto;display:flex;gap:10px}textarea{flex:1;resize:none;min-height:54px;max-height:180px;background:#101010;color:#fff;border:1px solid #303030;border-radius:12px;padding:14px;font:inherit;outline:none}button{border:1px solid #3b3b3b;background:#eee;color:#080808;border-radius:12px;padding:0 20px;font-weight:700;cursor:pointer}button:disabled{opacity:.45}.settings{max-width:820px;margin:0 auto 10px;display:flex;gap:8px}input{flex:1;background:#101010;color:#ddd;border:1px solid #303030;border-radius:9px;padding:9px}.status{max-width:820px;margin:8px auto 0;color:#777;font-size:12px}
+</style></head><body><div class="app"><header><div class="logo">H</div><div><div class="title">HARDed AI</div><div class="sub">Llama 3.2 3B · sessão persistente no GitHub Actions</div></div></header><main id="chat"><div class="message assistant"><div><div class="meta">HARDed</div><div class="bubble">Olá. Inicie uma sessão no GitHub Actions e mantenha o runner aberto. Depois posso responder várias mensagens sem recarregar o modelo.</div></div></div></main><div class="composer"><div class="settings"><input id="token" type="password" placeholder="GitHub fine-grained token (somente nesta sessão)"><button id="start">Iniciar sessão</button></div><div class="row"><textarea id="prompt" placeholder="Digite sua mensagem..." rows="1"></textarea><button id="send" disabled>Enviar</button></div><div id="status" class="status">Sessão não iniciada.</div></div></div>
 <script>
-const OWNER="progames12301-hash",REPO="H-rded-AI",WORKFLOW="harded-persistent-chat.yml",BRANCH="main";
-const chat=document.getElementById("chat"),token=document.getElementById("token"),start=document.getElementById("start"),send=document.getElementById("send"),box=document.getElementById("prompt"),status=document.getElementById("status");
-let queue=[],history=[],active=false;
-
-async function api(path,opt={}){
- const t=token.value.trim(); if(!t)throw Error("Informe o token.");
- const r=await fetch("https://api.github.com"+path,{...opt,headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer "+t,"X-GitHub-Api-Version":"2026-03-10",...(opt.headers||{})}});
- if(!r.ok)throw Error("GitHub "+r.status+": "+(await r.text()).slice(0,250));
- return r.status===204?null:r.json();
-}
-function add(role,text){const w=document.createElement("div");w.className="message "+role;w.innerHTML=`<div><div class="meta">${role==="user"?"Você":"HARDed"}</div><div class="bubble"></div></div>`;w.querySelector(".bubble").textContent=text;chat.appendChild(w);chat.scrollTop=chat.scrollHeight;return w}
-async function getFile(path){
- try{return await api(`/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`)}catch(e){if(String(e).includes("404"))return null;throw e}
-}
-async function putFile(path,obj,sha,msg){
- const content=btoa(unescape(encodeURIComponent(JSON.stringify(obj,null,2))));
- const body={message:msg,content,branch:BRANCH};if(sha)body.sha=sha;
- return api(`/repos/${OWNER}/${REPO}/contents/${path}`,{method:"PUT",body:JSON.stringify(body)});
-}
-async function startSession(){
- start.disabled=true;status.textContent="Iniciando runner e carregando Llama 3.2 3B...";
- try{
-  const r=await api(`/repos/${OWNER}/${REPO}/actions/workflows/${WORKFLOW}/dispatches`,{method:"POST",body:JSON.stringify({ref:BRANCH})});
-  active=true;send.disabled=false;status.textContent="Runner iniciando. O primeiro modelo pode levar alguns minutos para carregar.";
- }catch(e){status.textContent=e.message;start.disabled=false}
-}
-async function sendMessage(){
- const text=box.value.trim();if(!text||!active)return;
- box.value="";add("user",text);send.disabled=true;status.textContent="Enviando para o runner...";
- const id=Date.now().toString(36)+Math.random().toString(36).slice(2,7);
- const old=await getFile("chat/queue.json");let data=[],sha;
- if(old){data=JSON.parse(decodeURIComponent(escape(atob(old.content.replace(/\n/g,"")))));sha=old.sha}
- const item={id,prompt:text,history:history.slice(-12),done:false};
- data.push(item);await putFile("chat/queue.json",data,sha,"HARDed: new message "+id);
- history.push({role:"user",content:text});
- await waitFor(id);
- send.disabled=false;
-}
-async function waitFor(id){
- for(let i=0;i<300;i++){
-  try{
-   const f=await getFile("chat/queue.json");
-   if(f){
-    const d=JSON.parse(decodeURIComponent(escape(atob(f.content.replace(/\n/g,"")))));
-    const x=d.find(v=>v.id===id);
-    if(x&&x.done){
-      add("assistant",x.answer||"Sem resposta.");
-      history.push({role:"assistant",content:x.answer||""});
-      status.textContent="HARDed online · modelo permanece carregado.";
-      return;
-    }
-   }
-  }catch(e){}
-  await new Promise(r=>setTimeout(r,3000));
- }
- add("assistant","Tempo limite aguardando esta resposta. Verifique a execução do Actions.");
- status.textContent="Verifique o runner.";
-}
-start.onclick=startSession;send.onclick=sendMessage;
-box.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage()}});
-</script>
-</body>
-</html>
+const OWNER="progames12301-hash",REPO="H-rded-AI",WORKFLOW="jekyll-docker.yml",BRANCH="main";
+const chat=document.getElementById("chat"),token=document.getElementById("token"),start=document.getElementById("start"),send=document.getElementById("send"),box=document.getElementById("prompt"),status=document.getElementById("status");let history=[],active=false;
+async function api(path,opt={}){const t=token.value.trim();if(!t)throw Error("Informe o token.");const r=await fetch("https://api.github.com"+path,{...opt,headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer "+t,"X-GitHub-Api-Version":"2026-03-10",...(opt.headers||{})}});if(!r.ok)throw Error("GitHub "+r.status+": "+(await r.text()).slice(0,250));return r.status===204?null:r.json()}
+function add(role,text){const w=document.createElement("div");w.className="message "+role;w.innerHTML=`<div><div class="meta">${role==="user"?"Você":"HARDed"}</div><div class="bubble"></div></div>`;w.querySelector(".bubble").textContent=text;chat.appendChild(w);chat.scrollTop=chat.scrollHeight}
+async function getFile(path){try{return await api(`/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`)}catch(e){if(String(e).includes("404"))return null;throw e}}
+async function putFile(path,obj,sha,msg){const content=btoa(unescape(encodeURIComponent(JSON.stringify(obj,null,2))));const body={message:msg,content,branch:BRANCH};if(sha)body.sha=sha;return api(`/repos/${OWNER}/${REPO}/contents/${path}`,{method:"PUT",body:JSON.stringify(body)})}
+async function startSession(){start.disabled=true;status.textContent="Iniciando runner e carregando Llama 3.2 3B...";try{await api(`/repos/${OWNER}/${REPO}/actions/workflows/${WORKFLOW}/dispatches`,{method:"POST",body:JSON.stringify({ref:BRANCH})});active=true;send.disabled=false;status.textContent="Runner iniciando. O primeiro modelo pode levar alguns minutos para carregar."}catch(e){status.textContent=e.message;start.disabled=false}}
+async function sendMessage(){const text=box.value.trim();if(!text||!active)return;box.value="";add("user",text);send.disabled=true;status.textContent="Enviando para o runner...";const id=Date.now().toString(36)+Math.random().toString(36).slice(2,7);try{const old=await getFile("chat/queue.json");let data=[],sha;if(old){data=JSON.parse(decodeURIComponent(escape(atob(old.content.replace(/\n/g,"")))));sha=old.sha}data.push({id,prompt:text,history:history.slice(-12),done:false});await putFile("chat/queue.json",data,sha,"HARDed: new message "+id);history.push({role:"user",content:text});await waitFor(id)}catch(e){status.textContent=e.message}send.disabled=false}
+async function waitFor(id){for(let i=0;i<300;i++){try{const f=await getFile("chat/queue.json");if(f){const d=JSON.parse(decodeURIComponent(escape(atob(f.content.replace(/\n/g,"")))));const x=d.find(v=>v.id===id);if(x&&x.done){add("assistant",x.answer||"Sem resposta.");history.push({role:"assistant",content:x.answer||""});status.textContent="HARDed online · modelo permanece carregado.";return}}}catch(e){}await new Promise(r=>setTimeout(r,3000))}status.textContent="Tempo limite. Verifique a execução do Actions.";add("assistant","Tempo limite aguardando esta resposta. Verifique a execução do Actions.")}
+start.onclick=startSession;send.onclick=sendMessage;box.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage()}});
+</script></body></html>
