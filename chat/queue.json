@@ -3,6 +3,8 @@
     "id": "mufsp6rd1j8t5",
     "prompt": "oi",
     "history": [],
-    "done": false
+    "done": true,
+    "status": "completed",
+    "answer": "Olá! Como posso ajudá-lo hoje?"
   }
 ]
