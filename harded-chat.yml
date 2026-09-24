@@ -1,0 +1,211 @@
+name: HARDed Chat
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: "Mensagem para o HARDed"
+        required: true
+        type: string
+      history:
+        description: "Historico JSON da conversa"
+        required: false
+        default: "[]"
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: harded-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  chat:
+    name: HARDed Llama 3.2 3B
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    env:
+      MODEL_REPO: bartowski/Llama-3.2-3B-Instruct-GGUF
+      MODEL_FILE: Llama-3.2-3B-Instruct-Q4_K_M.gguf
+      MODEL_SHA256: e4f1a04d927b09ec18eb2f233d85ecd760fc2d35cec97e37f8604d3632210d9a
+      PROMPT: ${{ inputs.prompt }}
+      HISTORY: ${{ inputs.history }}
+
+    steps:
+      - name: Preparar runner
+        run: |
+          set -e
+          echo "CPU: $(nproc)"
+          free -h
+          df -h /
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential curl jq python3
+
+      - name: Baixar e compilar llama.cpp
+        run: |
+          set -e
+          git clone --depth 1 https://github.com/ggml-org/llama.cpp.git "$HOME/llama.cpp"
+          cmake -S "$HOME/llama.cpp" -B "$HOME/llama.cpp/build" -DGGML_NATIVE=ON -DGGML_OPENMP=ON
+          cmake --build "$HOME/llama.cpp/build" --config Release --target llama-server -j"$(nproc)"
+          "$HOME/llama.cpp/build/bin/llama-server" --version
+
+      - name: Restaurar modelo Q4_K_M
+        uses: actions/cache@v4
+        with:
+          path: models
+          key: harded-llama32-3b-q4km-${{ env.MODEL_SHA256 }}
+
+      - name: Baixar modelo se necessário
+        run: |
+          set -e
+          mkdir -p models
+          if [ ! -f "models/$MODEL_FILE" ]; then
+            echo "Baixando Llama 3.2 3B Q4_K_M..."
+            curl -L --fail --retry 5 --retry-delay 3 \
+              "https://huggingface.co/$MODEL_REPO/resolve/main/$MODEL_FILE?download=true" \
+              -o "models/$MODEL_FILE"
+          fi
+          echo "$MODEL_SHA256  models/$MODEL_FILE" | sha256sum -c
+          ls -lh "models/$MODEL_FILE"
+
+      - name: Preparar conversa
+        run: |
+          python3 - <<'PY'
+          import json, os
+          try:
+              items = json.loads(os.environ.get("HISTORY", "[]"))
+          except Exception:
+              items = []
+
+          lines = []
+          for item in items[-12:]:
+              role = str(item.get("role", "user")).upper()
+              content = str(item.get("content", ""))
+              if content:
+                  lines.append(f"{role}: {content}")
+
+          current = os.environ.get("PROMPT", "").strip()
+          text = "\n\n".join(lines)
+          if text:
+              text += "\n\n"
+          text += f"USER: {current}\nASSISTANT:"
+
+          open("/tmp/harded_prompt.txt", "w", encoding="utf-8").write(text)
+          PY
+
+      - name: Iniciar servidor do modelo
+        run: |
+          set -e
+          "$HOME/llama.cpp/build/bin/llama-server" \
+            -m "models/$MODEL_FILE" \
+            --host 127.0.0.1 \
+            --port 8080 \
+            -c 4096 \
+            -t "$(nproc)" \
+            -ngl 0 \
+            > /tmp/llama.log 2>&1 &
+
+          for i in $(seq 1 180); do
+            if curl -fsS http://127.0.0.1:8080/health >/dev/null 2>&1; then
+              echo "HARDed pronto."
+              exit 0
+            fi
+            sleep 2
+          done
+
+          cat /tmp/llama.log
+          exit 1
+
+      - name: Gerar resposta
+        run: |
+          set -e
+          python3 - <<'PY'
+          import json, os, urllib.request
+
+          prompt = open("/tmp/harded_prompt.txt", encoding="utf-8").read()
+
+          payload = {
+              "model": "harded-llama-3.2-3b",
+              "messages": [
+                  {
+                      "role": "system",
+                      "content": "Você é HARDed, uma IA de programação objetiva. Analise problemas com cuidado, não invente resultados e responda em português quando o usuário falar português."
+                  },
+                  {"role": "user", "content": prompt}
+              ],
+              "temperature": 0.2,
+              "top_p": 0.9,
+              "max_tokens": 1024,
+              "stream": False
+          }
+
+          req = urllib.request.Request(
+              "http://127.0.0.1:8080/v1/chat/completions",
+              data=json.dumps(payload).encode(),
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+
+          with urllib.request.urlopen(req, timeout=900) as r:
+              data = json.load(r)
+
+          answer = data["choices"][0]["message"]["content"]
+
+          result = {
+              "run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "status": "completed",
+              "model": "Llama 3.2 3B Instruct Q4_K_M",
+              "answer": answer
+          }
+
+          json.dump(
+              result,
+              open("/tmp/response.json", "w", encoding="utf-8"),
+              ensure_ascii=False,
+              indent=2
+          )
+          print(answer)
+          PY
+
+      - name: Publicar resposta
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          mkdir -p responses
+
+          if [ -f /tmp/response.json ]; then
+            cp /tmp/response.json "responses/${GITHUB_RUN_ID}.json"
+          else
+            python3 - <<'PY'
+          import json, os
+          result = {
+              "run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "status": "failed",
+              "answer": "O HARDed não conseguiu gerar uma resposta. Verifique os logs desta execução."
+          }
+          json.dump(
+              result,
+              open(f"responses/{os.environ['GITHUB_RUN_ID']}.json", "w", encoding="utf-8"),
+              ensure_ascii=False,
+              indent=2
+          )
+          PY
+          fi
+
+          CONTENT=$(base64 -w 0 "responses/${GITHUB_RUN_ID}.json")
+
+          curl -fsS -X PUT \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -d "{\"message\":\"HARDed response ${GITHUB_RUN_ID}\",\"content\":\"$CONTENT\"}" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/responses/${GITHUB_RUN_ID}.json"
+
+      - name: Log em caso de erro
+        if: failure()
+        run: |
+          echo "=== llama.cpp ==="
+          tail -100 /tmp/llama.log 2>/dev/null || true
