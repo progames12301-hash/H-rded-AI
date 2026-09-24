@@ -23,5 +23,28 @@
     "done": true,
     "status": "completed",
     "answer": "Aqui está um modelo básico de HTML para um documento web:\n\n```html\n<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Título da Página</title>\n  <link rel=\"stylesheet\" href=\"estilo.css\"> <!-- Link para o arquivo de estilos (opcional) -->\n</head>\n<body>\n  <header>\n    <!-- Cabeçalho da página -->\n  </header>\n  <main>\n    <!-- Conteúdo principal da página -->\n  </main>\n  <footer>\n    <!-- Rodapé da página -->\n  </footer>\n  <script src=\"script.js\"> <!-- Link para o arquivo de scripts (opcional) -->\n  </script>\n</body>\n</html>\n```\n\nExplicação dos elementos:\n\n*   `<!DOCTYPE html>`: Declara o documento como HTML5.\n*   `<html>`: É o elemento raiz do documento HTML.\n*   `<head>`: Contém informações sobre o documento, como o título, metadados e links para estilos e scripts.\n*   `<title>`: Define o título da página.\n*   `<meta>`: Define metadados sobre o documento, como o charset e o viewport.\n*   `<link>`: Linka para um arquivo de estilos (CSS) ou um arquivo de scripts (JavaScript).\n*   `<body>`: Contém o conteúdo da página.\n*   `<header>`: É o cabeçalho da página.\n*   `<main>`: É o conteúdo principal da página.\n*   `<footer>`: É o rodapé da página.\n*   `<script>`: Linka para um arquivo de scripts (JavaScript).\n\nLembre-se de que isso é apenas um modelo básico e que você pode personalizar e adicionar elementos para atender às suas necessidades específicas."
+  },
+  {
+    "id": "muftp6g362sor",
+    "prompt": "faz um site em html de qualquer coisa",
+    "history": [
+      {
+        "role": "user",
+        "content": "oi"
+      },
+      {
+        "role": "assistant",
+        "content": "Olá! Como posso ajudá-lo hoje?"
+      },
+      {
+        "role": "user",
+        "content": "faz um modelo de html pra mim"
+      },
+      {
+        "role": "assistant",
+        "content": "Aqui está um modelo básico de HTML para um documento web:\n\n```html\n<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Título da Página</title>\n  <link rel=\"stylesheet\" href=\"estilo.css\"> <!-- Link para o arquivo de estilos (opcional) -->\n</head>\n<body>\n  <header>\n    <!-- Cabeçalho da página -->\n  </header>\n  <main>\n    <!-- Conteúdo principal da página -->\n  </main>\n  <footer>\n    <!-- Rodapé da página -->\n  </footer>\n  <script src=\"script.js\"> <!-- Link para o arquivo de scripts (opcional) -->\n  </script>\n</body>\n</html>\n```\n\nExplicação dos elementos:\n\n*   `<!DOCTYPE html>`: Declara o documento como HTML5.\n*   `<html>`: É o elemento raiz do documento HTML.\n*   `<head>`: Contém informações sobre o documento, como o título, metadados e links para estilos e scripts.\n*   `<title>`: Define o título da página.\n*   `<meta>`: Define metadados sobre o documento, como o charset e o viewport.\n*   `<link>`: Linka para um arquivo de estilos (CSS) ou um arquivo de scripts (JavaScript).\n*   `<body>`: Contém o conteúdo da página.\n*   `<header>`: É o cabeçalho da página.\n*   `<main>`: É o conteúdo principal da página.\n*   `<footer>`: É o rodapé da página.\n*   `<script>`: Linka para um arquivo de scripts (JavaScript).\n\nLembre-se de que isso é apenas um modelo básico e que você pode personalizar e adicionar elementos para atender às suas necessidades específicas."
+      }
+    ],
+    "done": false
   }
 ]
