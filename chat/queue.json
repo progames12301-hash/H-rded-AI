@@ -6,5 +6,20 @@
     "done": true,
     "status": "completed",
     "answer": "Olá! Como posso ajudá-lo hoje?"
+  },
+  {
+    "id": "mufsrab37060k",
+    "prompt": "faz um modelo de html pra mim",
+    "history": [
+      {
+        "role": "user",
+        "content": "oi"
+      },
+      {
+        "role": "assistant",
+        "content": "Olá! Como posso ajudá-lo hoje?"
+      }
+    ],
+    "done": false
   }
 ]
