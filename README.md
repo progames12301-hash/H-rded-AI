@@ -1,13 +1,15 @@
 # HARDed AI
 
-Interface web para testar o HARDed usando GitHub Actions como runner e Llama 3.2 3B Instruct Q4_K_M.
+Arquitetura persistente:
 
-## Instalação
+HARDed Web -> GitHub Actions -> runner -> Llama 3.2 3B -> várias mensagens -> encerra.
 
-Copie:
-- `index.html` para a raiz do repositório
-- `.github/workflows/harded-chat.yml` para `.github/workflows/`
+O workflow fica com o modelo carregado e monitora `chat/queue.json`. A interface web coloca novas mensagens nessa fila. O runner processa e grava a resposta no mesmo arquivo.
 
-Depois habilite o workflow e abra o HTML pelo GitHub Pages.
+Coloque o workflow em `.github/workflows/harded-persistent-chat.yml` (não na raiz).
 
-O navegador precisa de um GitHub fine-grained token com Actions: Read and write neste repositório. O token é mantido somente na memória da página.
+O token usado no navegador precisa permitir:
+- Actions: Read and write
+- Contents: Read and write
+
+O token não é armazenado no código; fica apenas na memória da página.
